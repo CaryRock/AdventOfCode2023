@@ -1,31 +1,26 @@
 ;;;; Idea: read from left until first digit found, then read from right until
 ;;;; first digit (from the right) is found. Combine the two and sum over lines.
 
-;; Step 1: Larnin' to friggin' read (a file)
-(defun read-from-left (string count-list scale)
-  "Iterates over string and conses the first digit seen (multiplied by scale) to count-list."
-  (let ((*temp* ()))
-  (loop for c across string while (digit-char-p c)
-        do (cons (* scale (digit-char-p c)) *temp*))
-  (format t "*temp*: ~{~a ~}~%" *temp*)
-  (setf count-list (cons *temp* count-list))))
+(defvar *sums* ())
 
-(defun read-from-right (string count-list scale)
-  "Same as read-from-left, but reverses string beforehand."
-  (read-from-left (reverse string) count-list scale))
+(defun check-if-number-p (char)
+  (cond
+    ((null char) nil)
+    ((not (digit-char-p char)) nil)
+    (t t)))                         ; Assuming that if it filters here, it's a number
+    ;(t (digit-char-p char))))      
+
+(defun read-until-number (line)
+  (loop for c across line
+        do (if (check-if-number-p c) (return (digit-char-p c)))))
 
 (defun main()
-  (let ((*tens* (list ()))
-        (*ones* (list ()))
-        (in (open "test.data"))
-        (lines ()))
-    (when in
-      (loop for line = (read-line in nil)
-            while line do (cons line lines))
-      (close in))
-    (loop for line in lines
-          do (print line)
-          do (read-from-left line *tens* 10)
-          do (read-from-right line *ones* 1))
-    (format t "Tens: ~{~a ~}~%" *tens*)
-    (format t "Ones: ~{~a ~}~%" *ones*)))
+  ;(let ((in (open "test.data")))    ; Open the file with the data
+  (let ((in (open "01.data")))
+  (loop for line = (read-line in nil)
+        while line do (progn
+                        (setf *sums* (cons (* 10 (read-until-number line)) *sums*))
+                        (setf (car *sums*) (+ (read-until-number (reverse line)) (car *sums*)))))
+  (close in))                       ; Close the file
+  (format t "Total: ~a~%" (reduce #'+ *sums*)))
+  ;(format t "Calibration values:~%~{~a~%~}" (reverse *sums*))) ; Print to stdout the list of sums
